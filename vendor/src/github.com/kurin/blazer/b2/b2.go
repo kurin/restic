@@ -28,7 +28,6 @@
 package b2
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -306,9 +305,11 @@ func (o *Object) Name() string {
 
 // Attrs returns an object's attributes.
 func (o *Object) Attrs(ctx context.Context) (*Attrs, error) {
-	if err := o.ensure(ctx); err != nil {
+	f, err := o.b.b.downloadFileByName(ctx, o.name, 0, 1)
+	if err != nil {
 		return nil, err
 	}
+	o.f = o.b.b.file(f.id())
 	fi, err := o.f.getFileInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -403,7 +404,7 @@ func (o *Object) NewRangeReader(ctx context.Context, offset, length int64) *Read
 		cancel: cancel,
 		o:      o,
 		name:   o.name,
-		chunks: make(map[int]*bytes.Buffer),
+		chunks: make(map[int]*rchunk),
 		length: length,
 		offset: offset,
 	}
