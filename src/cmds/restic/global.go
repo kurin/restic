@@ -37,6 +37,7 @@ type GlobalOptions struct {
 	Quiet        bool
 	NoLock       bool
 	JSON         bool
+	CacheDir     string
 
 	ctx      context.Context
 	password string
@@ -73,6 +74,7 @@ func init() {
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 
+	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 
 	restoreTerminal()
@@ -316,7 +318,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, errors.Fatalf("unable to open repo: %v", err)
 	}
 
-	cache, err := cache.New(s.Config().ID, "")
+	cache, err := cache.New(s.Config().ID, opts.CacheDir)
 	if err != nil {
 		Warnf("unable to open cache: %v\n", err)
 	} else {
