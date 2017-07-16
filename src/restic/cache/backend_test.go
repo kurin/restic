@@ -45,7 +45,7 @@ func randomData(n int) (restic.Handle, []byte) {
 	id := restic.Hash(data)
 	copy(id[:], data)
 	h := restic.Handle{
-		Type: restic.DataFile,
+		Type: restic.IndexFile,
 		Name: id.String(),
 	}
 	return h, data
