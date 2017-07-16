@@ -19,11 +19,3 @@ Snapshots and Indexes
 
 Snapshot, Data and Index files are cached in the sub-directories ``snapshots``,
 ``data`` and  ``index``, as read from the repository.
-
-Keys
-----
-
-Keys are never cached locally. The sub-directory ``key`` contains an empty file
-which has the same name as the key file that was successfully used the last
-time to open the repository. On a subsequent run, restic tries this key file
-first (if it still exists).

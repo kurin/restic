@@ -22,7 +22,7 @@ func (c *Cache) canBeCached(t restic.FileType) bool {
 		return false
 	}
 
-	if _, ok := FileTypes[t]; !ok {
+	if _, ok := cacheLayoutPaths[t]; !ok {
 		return false
 	}
 

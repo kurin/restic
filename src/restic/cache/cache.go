@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"restic"
+	"restic/debug"
 	"restic/errors"
 	"strconv"
 )
@@ -41,18 +42,10 @@ const cacheVersion = 1
 // ensure Cache implements restic.Cache
 var _ restic.Cache = &Cache{}
 
-// FileTypes contains all file types that can be cached.
-var FileTypes = map[restic.FileType]bool{
-	restic.DataFile:     true,
-	restic.SnapshotFile: true,
-	restic.IndexFile:    true,
-}
-
 var cacheLayoutPaths = map[restic.FileType]string{
 	restic.DataFile:     "data",
 	restic.SnapshotFile: "snapshots",
 	restic.IndexFile:    "index",
-	restic.KeyFile:      "keys",
 }
 
 // New returns a new cache for the repo ID at dir. If dir is the empty string,
@@ -64,6 +57,8 @@ func New(id string, dir string) (c *Cache, err error) {
 			return nil, err
 		}
 	}
+
+	debug.Log("using cache dir %v for ID %v", dir, id)
 
 	v, err := readVersion(dir)
 	if err != nil {

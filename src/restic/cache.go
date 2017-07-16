@@ -27,10 +27,4 @@ type Cache interface {
 
 	// Has returns true if the file is cached.
 	Has(Handle) bool
-
-	// Key returns the ID of the key last used to access the repo.
-	Key() (ID, error)
-
-	// SetKey stores the ID of a key in the cache.
-	SetKey(ID) error
 }

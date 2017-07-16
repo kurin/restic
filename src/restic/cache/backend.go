@@ -30,7 +30,7 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 // Save stores a new file is the backend and the cache.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("cache Save(%v)", h)
-	if _, ok := FileTypes[h.Type]; ok {
+	if _, ok := cacheLayoutPaths[h.Type]; ok {
 		// save in the cache
 		if err = b.Cache.Save(h, rd); err != nil {
 			return err
@@ -60,7 +60,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		_ = b.Cache.Remove(h)
 	}
 
-	if _, ok := FileTypes[h.Type]; !ok || offset != 0 || length != 0 {
+	if _, ok := cacheLayoutPaths[h.Type]; !ok || offset != 0 || length != 0 {
 		return rd, err
 	}
 
