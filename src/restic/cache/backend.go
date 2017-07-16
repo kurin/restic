@@ -42,10 +42,15 @@ func (t *teeReader) Read(p []byte) (n int, err error) {
 	return n, err
 }
 
+var autoCacheTypes = map[restic.FileType]struct{}{
+	restic.IndexFile:    struct{}{},
+	restic.SnapshotFile: struct{}{},
+}
+
 // Save stores a new file is the backend and the cache.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("cache Save(%v)", h)
-	if _, ok := cacheLayoutPaths[h.Type]; !ok {
+	if _, ok := autoCacheTypes[h.Type]; !ok {
 		return b.Backend.Save(ctx, h, rd)
 	}
 
