@@ -27,23 +27,48 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return b.Cache.Remove(h)
 }
 
+type teeReader struct {
+	rd  io.Reader
+	wr  io.Writer
+	err error
+}
+
+func (t *teeReader) Read(p []byte) (n int, err error) {
+	n, err = t.rd.Read(p)
+	if t.err == nil && n > 0 {
+		_, t.err = t.wr.Write(p[:n])
+	}
+
+	return n, err
+}
+
 // Save stores a new file is the backend and the cache.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("cache Save(%v)", h)
-	if _, ok := cacheLayoutPaths[h.Type]; ok {
-		// save in the cache
-		if err = b.Cache.Save(h, rd); err != nil {
-			return err
-		}
-
-		// load from the cache and save in the backend
-		rd, err = b.Cache.Load(h, 0, 0)
-		if err != nil {
-			return err
-		}
+	if _, ok := cacheLayoutPaths[h.Type]; !ok {
+		return b.Backend.Save(ctx, h, rd)
 	}
 
-	return b.Backend.Save(ctx, h, rd)
+	wr, err := b.Cache.SaveWriter(h)
+	if err != nil {
+		debug.Log("unable to save object to cache: %v", err)
+		return b.Backend.Save(ctx, h, rd)
+	}
+
+	tr := &teeReader{rd: rd, wr: wr}
+	err = b.Backend.Save(ctx, h, tr)
+	if err != nil {
+		wr.Close()
+		b.Cache.Remove(h)
+		return err
+	}
+
+	err = wr.Close()
+	if err != nil {
+		debug.Log("cache writer returned error: %v", err)
+		b.Cache.Remove(h)
+	}
+	return nil
 }
 
 // Load loads a file from the cache or the backend.

@@ -3,6 +3,7 @@ package cache
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"restic"
@@ -126,6 +127,60 @@ func TestFiles(t *testing.T) {
 				t.Errorf("ClearIndexes returned a wrong list, want:\n  %v\ngot:\n  %v", want, list3)
 			}
 		})
+	}
+}
+
+func TestFileSaveWriter(t *testing.T) {
+	seed := time.Now().Unix()
+	t.Logf("seed is %v", seed)
+	rand.Seed(seed)
+
+	c, cleanup := TestNewCache(t)
+	defer cleanup()
+
+	// save about 5 MiB of data in the cache
+	data := test.Random(rand.Int(), 5234142)
+	id := restic.ID{}
+	copy(id[:], data)
+	h := restic.Handle{
+		Type: restic.DataFile,
+		Name: id.String(),
+	}
+
+	wr, err := c.SaveWriter(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	n, err := io.Copy(wr, bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if n != int64(len(data)) {
+		t.Fatalf("wrong number of bytes written, want %v, got %v", len(data), n)
+	}
+
+	if err = wr.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	rd, err := c.Load(h, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buf, err := ioutil.ReadAll(rd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(buf) != len(data) {
+		t.Fatalf("wrong number of bytes read, want %v, got %v", len(data), len(buf))
+	}
+
+	if !bytes.Equal(buf, data) {
+		t.Fatalf("wrong data returned, want:\n  %02x\ngot:\n  %02x", data[:16], buf[:16])
 	}
 }
 

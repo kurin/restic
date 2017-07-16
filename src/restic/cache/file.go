@@ -63,22 +63,33 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 	return rd, nil
 }
 
-// Save saves a file in the cache.
-func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
+// SaveWriter returns a writer for the cache object h. It must be closed after writing is finished.
+func (c *Cache) SaveWriter(h restic.Handle) (io.WriteCloser, error) {
 	debug.Log("Save to cache: %v", h)
 	if !c.canBeCached(h.Type) {
-		return errors.New("cannot be cached")
+		return nil, errors.New("cannot be cached")
 	}
 
 	p := c.filename(h)
 	err := os.MkdirAll(filepath.Dir(p), 0700)
 	if err != nil {
-		return errors.Wrap(err, "MkdirAll")
+		return nil, errors.Wrap(err, "MkdirAll")
 	}
 
 	f, err := os.Create(p)
 	if err != nil {
-		return errors.Wrap(err, "Create")
+		return nil, errors.Wrap(err, "Create")
+	}
+
+	return f, err
+}
+
+// Save saves a file in the cache.
+func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
+	debug.Log("Save to cache: %v", h)
+	f, err := c.SaveWriter(h)
+	if err != nil {
+		return err
 	}
 
 	if _, err = io.Copy(f, rd); err != nil {
@@ -163,14 +174,12 @@ func (c *Cache) list(t restic.FileType) (restic.IDSet, error) {
 
 // Has returns true if the file is cached.
 func (c *Cache) Has(h restic.Handle) bool {
-	debug.Log("checking cache for %v", h)
 	if !c.canBeCached(h.Type) {
 		return false
 	}
 
 	_, err := os.Stat(c.filename(h))
 	if err == nil {
-		debug.Log("is cached: %v", h)
 		return true
 	}
 
