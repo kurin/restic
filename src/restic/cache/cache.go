@@ -59,8 +59,9 @@ func New(id string, dir string) (c *Cache, err error) {
 	}
 
 	debug.Log("using cache dir %v for ID %v", dir, id)
+	cachedir := filepath.Join(dir, id)
 
-	v, err := readVersion(dir)
+	v, err := readVersion(cachedir)
 	if err != nil {
 		return nil, err
 	}
@@ -69,21 +70,25 @@ func New(id string, dir string) (c *Cache, err error) {
 		return nil, errors.New("cache version is newer")
 	}
 
+	if err = fs.MkdirAll(cachedir, dirMode); err != nil {
+		return nil, err
+	}
+
 	if v < cacheVersion {
-		err = ioutil.WriteFile(filepath.Join(dir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), 0644)
+		err = ioutil.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), 0644)
 		if err != nil {
 			return nil, errors.Wrap(err, "WriteFile")
 		}
 	}
 
 	for _, p := range cacheLayoutPaths {
-		if err = os.MkdirAll(filepath.Join(dir, id, p), dirMode); err != nil {
+		if err = os.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
 			return nil, err
 		}
 	}
 
 	c = &Cache{
-		Path: filepath.Join(dir, id),
+		Path: filepath.Join(dir, cachedir),
 	}
 
 	return c, nil
