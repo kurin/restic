@@ -7,6 +7,7 @@ import (
 	"restic"
 	"restic/debug"
 	"restic/errors"
+	"restic/fs"
 )
 
 func (c *Cache) filename(h restic.Handle) string {
@@ -43,7 +44,7 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		return nil, errors.New("cannot be cached")
 	}
 
-	f, err := os.Open(c.filename(h))
+	f, err := fs.Open(c.filename(h))
 	if err != nil {
 		return nil, errors.Wrap(err, "Open")
 	}
@@ -71,12 +72,12 @@ func (c *Cache) SaveWriter(h restic.Handle) (io.WriteCloser, error) {
 	}
 
 	p := c.filename(h)
-	err := os.MkdirAll(filepath.Dir(p), 0700)
+	err := fs.MkdirAll(filepath.Dir(p), 0700)
 	if err != nil {
 		return nil, errors.Wrap(err, "MkdirAll")
 	}
 
-	f, err := os.Create(p)
+	f, err := fs.Create(p)
 	if err != nil {
 		return nil, errors.Wrap(err, "Create")
 	}
@@ -110,7 +111,7 @@ func (c *Cache) Remove(h restic.Handle) error {
 		return nil
 	}
 
-	return os.Remove(c.filename(h))
+	return fs.Remove(c.filename(h))
 }
 
 // Clear removes all files of type t from the cache that are not contained in
@@ -131,7 +132,7 @@ func (c *Cache) Clear(t restic.FileType, valid restic.IDSet) error {
 			continue
 		}
 
-		if err = os.Remove(c.filename(restic.Handle{Type: t, Name: id.String()})); err != nil {
+		if err = fs.Remove(c.filename(restic.Handle{Type: t, Name: id.String()})); err != nil {
 			return err
 		}
 	}
@@ -178,7 +179,7 @@ func (c *Cache) Has(h restic.Handle) bool {
 		return false
 	}
 
-	_, err := os.Stat(c.filename(h))
+	_, err := fs.Stat(c.filename(h))
 	if err == nil {
 		return true
 	}

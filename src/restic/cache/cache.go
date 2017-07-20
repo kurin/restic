@@ -8,6 +8,7 @@ import (
 	"restic"
 	"restic/debug"
 	"restic/errors"
+	"restic/fs"
 	"strconv"
 )
 
@@ -82,7 +83,7 @@ func New(id string, dir string) (c *Cache, err error) {
 	}
 
 	for _, p := range cacheLayoutPaths {
-		if err = os.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
+		if err = fs.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
 			return nil, err
 		}
 	}
