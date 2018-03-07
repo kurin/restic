@@ -2,7 +2,9 @@ package b2
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"path"
 	"strings"
@@ -50,6 +52,12 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 	client, err := newClient(ctx, cfg, rt)
 	if err != nil {
 		return nil, err
+	}
+
+	l, err := net.Listen("tcp", "127.0.0.1:")
+	if err == nil {
+		go http.Serve(l, client)
+		fmt.Printf("view http://%v for debug info\n", l.Addr())
 	}
 
 	bucket, err := client.Bucket(ctx, cfg.Bucket)
